@@ -44,6 +44,7 @@ export default function App() {
   const handleAiGenerate = async (topic) => {
     console.log(`App.jsx received topic: ${topic}`);
     setIsAiLoading(true);
+
     try {
       const response = await axios.post(`${API_URL}/generate-ai`, { topic });
       console.log("Raw AI Response:", response.data);
@@ -52,24 +53,51 @@ export default function App() {
         const questionData = q.data || q;
         let questionType = q.questionType;
 
+      
         if (!questionType) {
           if (questionData.categories) questionType = "Categorize";
           else if (questionData.sentence) questionType = "Cloze";
           else if (questionData.passage) questionType = "Comprehension";
         }
 
+        
         if (questionData.items && Array.isArray(questionData.items)) {
-          questionData.items = questionData.items.map((item, index) => ({
-            ...item,
-            id: item.id || Date.now() + Math.random() + index,
-          }));
+          questionData.items = questionData.items.map((item, index) => {
+            if (typeof item === "string") {
+              return {
+                id: Date.now() + Math.random() + index,
+                text: item,
+              };
+            } else if (item.text) {
+              return {
+                ...item,
+                id: item.id || Date.now() + Math.random() + index,
+              };
+            } else {
+             
+              return {
+                id: Date.now() + Math.random() + index,
+                text: Object.values(item).join(""),
+              };
+            }
+          });
         }
 
+        
         if (questionData.mcqs && Array.isArray(questionData.mcqs)) {
-          questionData.mcqs = questionData.mcqs.map((mcq, index) => ({
-            ...mcq,
-            id: mcq.id || Date.now() + Math.random() + index,
-          }));
+          questionData.mcqs = questionData.mcqs.map((mcq, index) => {
+            if (typeof mcq === "string") {
+              return {
+                id: Date.now() + Math.random() + index,
+                text: mcq,
+              };
+            } else {
+              return {
+                ...mcq,
+                id: mcq.id || Date.now() + Math.random() + index,
+              };
+            }
+          });
         }
 
         return {
@@ -83,7 +111,7 @@ export default function App() {
 
       if (validQuestions.length === 0 && response.data.length > 0) {
         alert(
-          "The AI returned data in an unexpected format. Please check the browser console for the raw response data to debug."
+          "The AI returned data in an unexpected format. Please check the console for the raw response data."
         );
       }
 
